@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+# Ignore certificate bundle
+zf-cabundle.crt
 
 # debug
 npm-debug.log*
