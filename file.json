@@ -1,0 +1,22 @@
+[
+    {
+        "ID": "SWR_22R4_1398",
+        "text": "Originator:\nGuangyu Gu(Shanghai)\nDistribution List:\nEngineering Project Manager:Bingo Zhu(Shanghai)\nProject Quality Engineer: \nProject Requirement Manager: Guangyu Gu(Shanghai)\nSystem Integration Leader: \nLead System Engineer: Qiangqiang Hou(Chongqing)\nSystem Requirement Engineer:Zhongyuan Luo(Chongqing)\nSystem Architecture Engineer:\nEMI: Wenming Nan(Shanghai)\nTest Manager: \nTest Engineer: TBD\nSafety Manager: \nSoftware Project Manager: \nSoftware Requirements Manager: Ming Lu(Shanghai)\nECU SubSystem Leader: \nSensor SubSystem Leader:\nMotor SubSystem Leader: \nSenior System Manager: Yao Li (Shanghai)\nSystem Engineering Manager: Yao Li(Shanghai)"
+    },
+    {
+        "ID": "SWR_22R4_1399",
+        "text": "Revision Status:\n·\tBaseline 0.1 and onwards will be created for R758 development.\n·\tThe following matrix only lists major baselines & important minor baselines. Go to \"File -> Baseline -> View\" to view the complete list.\nBaseline\tRevision\tEffective Date\tSystem Release\tReason for Revision\nn0.1\t[A]\t18 Jul,2024\tn/a\tCreate a new document for internal review,SWRS 1a 22R4.\n22R4.0.2\t[A]\t19 Jul,2024\t\tupdated TSR 22R4\n TSR 22R40.3\t\t31 Jul.2024\t\t\nion fi\nishedNote: Revision is indicated by a suffix (e.g. [A], [B], ...) in the\n·\ttribute \"ReqID\"\"GEELY_R758_BD_CusReq_\" will be added as prefix and suffix No. will be replaced with current object ID in the attribute \"ReqID \", if an object is modified/added for R758, including paramete\n·\t/signal change.3.   Attribute \"ChangeReason\" will be filled out if an object is modified/added for R758, including paramete\n/signal change.4.   A dash “-“ in the Baseline column indicates that no change has been made since the pr\nvious baseline."
+    },
+    {
+        "ID": "SWR_22R4_1",
+        "text": "1 LIST OF REQUIREMENTS WITH DEVIATIONS"
+    },
+    {
+        "ID": "SWR_22R4_2",
+        "text": "2 TERMINOLOGY"
+    },
+    {
+        "ID": "SWR_22R4_3",
+        "text": "2.1 Abbreviations"
+    }
+]
