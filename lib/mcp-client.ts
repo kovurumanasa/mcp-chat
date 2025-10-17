@@ -1,3 +1,17 @@
+/**
+ * Helper to build extraHeaders for initializeMCPClients from a bearer token
+ * @param token - The access token string
+ * @returns Record<string, string> with Authorization header
+ */
+export function buildAuthHeaders(token?: string): Record<string, string> | undefined {
+  if (!token) return undefined;
+  return { authorization: `Bearer ${token}` };
+}
+
+// Example usage:
+// import { buildAuthHeaders, initializeMCPClients } from './mcp-client';
+// const extraHeaders = buildAuthHeaders(accessToken);
+// await initializeMCPClients(mcpServers, abortSignal, extraHeaders);
 import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -21,10 +35,16 @@ export interface MCPClientManager {
 /**
  * Initialize MCP clients for API calls
  * This uses the already running persistent HTTP or SSE servers
+ *
+ * @param mcpServers - Array of MCP server configs
+ * @param abortSignal - Optional AbortSignal for cleanup
+ * @param extraHeaders - Optional extra headers (e.g., { Authorization: 'Bearer ...' }) to merge with each server's headers
+ * @returns MCPClientManager with tools, clients, and cleanup
  */
 export async function initializeMCPClients(
   mcpServers: MCPServerConfig[] = [],
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  extraHeaders?: Record<string, string>
 ): Promise<MCPClientManager> {
   // Initialize tools
   let tools = {};
@@ -33,10 +53,12 @@ export async function initializeMCPClients(
   // Process each MCP server configuration
   for (const mcpServer of mcpServers) {
     try {
-      const headers = mcpServer.headers?.reduce((acc, header) => {
+      // Merge per-server headers and extraHeaders (extraHeaders take precedence)
+      const baseHeaders = mcpServer.headers?.reduce((acc, header) => {
         if (header.key) acc[header.key] = header.value || '';
         return acc;
-      }, {} as Record<string, string>);
+      }, {} as Record<string, string>) || {};
+      const headers = { ...baseHeaders, ...(extraHeaders || {}) };
 
       const transport = mcpServer.type === 'sse'
         ? {

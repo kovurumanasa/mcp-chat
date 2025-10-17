@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "npx cross-env NODE_EXTRA_CA_CERTS=./zf-cabundle.crt next dev --port 4200 --turbopack",
+    "dev": "npx cross-env NODE_EXTRA_CA_CERTS=./zf-cabundle.crt next dev --port 3000 --turbopack",
+    "dev:https": "npx cross-env NODE_EXTRA_CA_CERTS=./zf-cabundle.crt concurrently \"npm run dev\" \"npx local-ssl-proxy --source 4200 --target 3000 --cert ./certificates/localhost.pem --key ./certificates/localhost-key.pem\"",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "next lint",
@@ -73,6 +74,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "concurrently": "^8.2.2",
     "cross-env": "^10.1.0",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.4",

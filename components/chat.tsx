@@ -12,19 +12,57 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { useMCP } from "@/lib/context/mcp-context";
 import { getUserId } from "@/lib/user-id";
+import { useAuth } from "@/lib/msal-provider";
 
 export default function Chat() {
   const [chatId, setChatId] = useState<string>("");
-   const userId = getUserId();
+  const userId = getUserId();
   const [selectedModel, setSelectedModel] = useLocalStorage<modelID>("selectedModel", defaultModel);
   const router = useRouter();
   const params = useParams();
+  const [initialMessages, setInitialMessages] = useState<any[]>([]);
   useEffect(() => {
     setChatId(nanoid());
   }, []);
-   const effectiveChatId = (params as { id?: string })?.id || chatId;
+  const effectiveChatId = (params as { id?: string })?.id || chatId;
 
-   const { mcpServersForApi: rawMcpServersForApi } = useMCP();
+  // Hydrate messages from server if chatId is present
+  useEffect(() => {
+    async function fetchInitialMessages() {
+      if (params?.id) {
+        try {
+          const res = await fetch(`/api/chats/${params.id}`, {
+            headers: { 'x-user-id': userId }
+          });
+          if (res.ok) {
+            const chat = await res.json();
+            if (chat && Array.isArray(chat.messages)) {
+              // Lightweight client-side conversion
+              setInitialMessages(chat.messages.map((message: any) => {
+                let parts: any[] = [];
+                try {
+                  parts = JSON.parse(message.parts);
+                } catch {}
+                return {
+                  id: message.id,
+                  parts,
+                  role: message.role,
+                  content: parts.filter((p: any) => p.type === 'text' && p.text).map((p: any) => p.text).join('\n'),
+                  createdAt: message.createdAt,
+                };
+              }));
+            }
+          }
+        } catch (e) {
+          // fail silently
+        }
+      }
+    }
+    fetchInitialMessages();
+  }, [params?.id, userId]);
+
+  const { mcpServersForApi: rawMcpServersForApi } = useMCP();
+  const { accessToken } = useAuth();
   // Memoize mcpServersForApi so it only changes when its contents change
   const mcpServersForApi = useMemo(() => rawMcpServersForApi, [JSON.stringify(rawMcpServersForApi)]);
 
@@ -34,15 +72,21 @@ export default function Chat() {
   let useChatResult: ReturnType<typeof useChat> | null = null;
   const { messages, handleInputChange, handleSubmit, status, stop } = useChat({
     id: effectiveChatId,
-    body: { chatId: effectiveChatId, userId: userId, selectedModel: selectedModel, mcpServers: mcpServersForApi },
+    body: {
+      chatId: effectiveChatId,
+      userId: userId,
+      selectedModel: selectedModel,
+      mcpServers: mcpServersForApi,
+      accessToken, // <-- send token to API
+    },
     streamProtocol: "text",
-    initialMessages: [],
+    initialMessages: initialMessages,
     maxSteps: 20,
     experimental_throttle: 500,
     onFinish: (message) => {
       // Custom logic when a message finishes streaming
-      console.log('[Chat Component] Message finished:', message);
       setIsSubmitting(false);
+      setInputValue("");
     },
   });
   const isLoading = status === "streaming" || status === "submitted";

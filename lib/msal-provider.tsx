@@ -1,4 +1,16 @@
-import React from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useMsal, useAccount, useMsalAuthentication } from "@azure/msal-react";
+// Context to provide MSAL authentication state and token
+const AuthContext = createContext({
+  isAuthenticated: false,
+  accessToken: null,
+  login: () => {},
+  logout: () => {},
+});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 import { BrowserCacheLocation, LogLevel, PublicClientApplication } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
 // const isIE = window.navigator.userAgent.indexOf('MSIE ') > -1 || window.navigator.userAgent.indexOf('Trident/') > -1;
@@ -28,5 +40,46 @@ const msalConfig = {
 const msalInstance = new PublicClientApplication(msalConfig);
 
 export function AzureMsalProvider({ children }: { children: React.ReactNode }) {
-    return <MsalProvider instance={msalInstance}>{children}</MsalProvider>;
+  return (
+    <MsalProvider instance={msalInstance}>
+      <MsalAuthProvider>{children}</MsalAuthProvider>
+    </MsalProvider>
+  );
+}
+
+function MsalAuthProvider({ children }: { children: React.ReactNode }) {
+  const { instance, accounts } = useMsal();
+  const account = useAccount(accounts[0] || {});
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const isAuthenticated = !!account;
+
+  // Acquire token silently or interactively
+  useEffect(() => {
+    async function getToken() {
+      if (!account) {
+        setAccessToken(null);
+        return;
+      }
+      try {
+        const response = await instance.acquireTokenSilent({
+          account,
+          scopes: ["user.read"], // TODO: Use required scopes for MCP
+        });
+        setAccessToken(response.accessToken);
+      } catch (e) {
+        setAccessToken(null);
+      }
+    }
+    getToken();
+  }, [account, instance]);
+
+  // Login and logout helpers
+  const login = () => instance.loginRedirect({ scopes: ["user.read"] });
+  const logout = () => instance.logoutRedirect();
+
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, accessToken, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

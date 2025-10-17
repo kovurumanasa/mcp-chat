@@ -64,8 +64,24 @@ import { Label } from "@/components/ui/label";
 import { useMCP } from "@/lib/context/mcp-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence, motion } from "motion/react";
+import { useAuth } from "@/lib/msal-provider";
+import { useMsal } from "@azure/msal-react";
 
 export function ChatSidebar() {
+  // MSAL user info
+  const { isAuthenticated, logout } = useAuth();
+  const { accounts } = useMsal();
+  const [msalUser, setMsalUser] = useState<{ name?: string; email?: string }>({});
+  useEffect(() => {
+    if (isAuthenticated && accounts && accounts[0]) {
+      setMsalUser({
+        name: accounts[0].name,
+        email: accounts[0].username,
+      });
+    } else {
+      setMsalUser({});
+    }
+  }, [isAuthenticated, accounts]);
   const router = useRouter();
   const pathname = usePathname();
   const [userId, setUserId] = useState<string>("");
@@ -130,7 +146,7 @@ export function ChatSidebar() {
   };
 
   // Show loading state if user ID is not yet initialized
-  if (!userId) {
+  if (!userId && !msalUser.name && !msalUser.email) {
     return null; // Or a loading spinner
   }
 
@@ -407,10 +423,10 @@ export function ChatSidebar() {
                     </Avatar>
                     <div className="grid text-left text-sm leading-tight">
                       <span className="truncate font-medium text-foreground/90">
-                        User ID
+                        {msalUser.name ? msalUser.name : "User ID"}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
-                        {userId.substring(0, 16)}...
+                        {msalUser.email ? msalUser.email : userId.substring(0, 16) + "..."}
                       </span>
                     </div>
                   </div>
@@ -433,10 +449,10 @@ export function ChatSidebar() {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold text-foreground/90">
-                      User ID
+                      {msalUser.name ? msalUser.name : "User ID"}
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {userId}
+                      {msalUser.email ? msalUser.email : userId}
                     </span>
                   </div>
                 </div>
@@ -461,6 +477,15 @@ export function ChatSidebar() {
                 >
                   <Pencil className="mr-2 h-4 w-4 hover:text-sidebar-accent" />
                   Edit User ID
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    logout();
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4 hover:text-sidebar-accent" />
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

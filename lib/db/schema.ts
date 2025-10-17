@@ -47,6 +47,6 @@ export type DBMessage = {
   id: string;
   chatId: string;
   role: string;
-  parts: MessagePart[];
+  parts: string; // JSON string
   createdAt: Date;
-}; 
+};

@@ -68,14 +68,19 @@ const MCPContext = createContext<MCPContextType | undefined>(undefined);
 // Helper function to check server health and get tools
 async function checkServerHealth(
   url: string,
-  headers?: KeyValuePair[]
+  headers?: KeyValuePair[],
+  accessToken?: string
 ): Promise<{ ready: boolean; tools?: MCPTool[]; error?: string }> {
   try {
+    const fetchHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (accessToken) {
+      fetchHeaders['authorization'] = `Bearer ${accessToken}`;
+    }
     const response = await fetch('/api/mcp-health', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: fetchHeaders,
       body: JSON.stringify({ url, headers }),
     });
 
@@ -91,6 +96,10 @@ async function checkServerHealth(
 }
 
 export function MCPProvider({ children }: { children: React.ReactNode }) {
+  // Import useAuth from MSAL provider
+  // @ts-ignore
+  const { useAuth } = require("@/lib/msal-provider");
+  const { accessToken } = useAuth();
   const [mcpServers, setMcpServers] = useLocalStorage<MCPServer[]>(
     STORAGE_KEYS.MCP_SERVERS,
     []
@@ -181,8 +190,8 @@ export function MCPProvider({ children }: { children: React.ReactNode }) {
         updateServerStatus(serverId, "error", "No URL provided");
         return false;
       }
-
-      const healthResult = await checkServerHealth(server.url, server.headers);
+console.log(accessToken,'accessTokenaccessToken')
+  const healthResult = await checkServerHealth(server.url, server.headers, accessToken);
       
       if (healthResult.ready && healthResult.tools) {
         updateServerWithTools(serverId, healthResult.tools, "connected");

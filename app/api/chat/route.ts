@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import { db } from '@/lib/db';
 import { chats } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { initializeMCPClients, type MCPServerConfig } from '@/lib/mcp-client';
+import { initializeMCPClients, type MCPServerConfig, buildAuthHeaders } from '@/lib/mcp-client';
 import { generateTitle } from '@/app/actions';
 
 import { checkBotId } from "botid/server";
@@ -15,6 +15,7 @@ function appendResponseMessages(original: UIMessage[], responseMessages: UIMessa
   return [...original, ...responseMessages];
 }
 
+// Route handler for POST requests
 export async function POST(req: Request) {
   const {
     messages,
@@ -22,16 +23,17 @@ export async function POST(req: Request) {
     selectedModel,
     userId,
     mcpServers = [],
+    accessToken,
   }: {
     messages: UIMessage[];
     chatId?: string;
     selectedModel: modelID;
     userId: string;
     mcpServers?: MCPServerConfig[];
+    accessToken?: string;
   } = await req.json();
 
   const { isBot, isGoodBot } = await checkBotId();
-
   if (isBot && !isGoodBot) {
     return new Response(
       JSON.stringify({ error: "Bot is not allowed to access this endpoint" }),
@@ -96,11 +98,13 @@ export async function POST(req: Request) {
     }
   }
 
+  // Build extra headers from accessToken (if provided)
+  const extraHeaders = buildAuthHeaders(accessToken);
   // Initialize MCP clients using the already running persistent HTTP/SSE servers
-  const { tools, cleanup } = await initializeMCPClients(mcpServers, req.signal);
+  const { tools, cleanup } = await initializeMCPClients(mcpServers, req.signal, extraHeaders);
 
-  console.log("messages", messages);
-  console.log("parts", messages.map(m => m.parts.map(p => p)));
+  // console.log("messages", messages);
+  // console.log("parts", messages.map(m => m.parts.map(p => p)));
 
   // Track if the response has completed
   let responseCompleted = false;
@@ -133,17 +137,7 @@ export async function POST(req: Request) {
     tools,
     maxSteps: 20,
     providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingBudget: 2048,
-        },
-      },
-      anthropic: {
-        thinking: {
-          type: 'enabled',
-          budgetTokens: 12000
-        },
-      }
+      azure: { apiVersion: process.env.AZURE_API_VERSION || '2024-04-01-preview' },
     },
     stopWhen: (lastStep) => lastStep.type === 'tool-result' && lastStep.toolCall.toolName === 'final_tool',
     experimental_transform: smoothStream({
@@ -174,11 +168,7 @@ export async function POST(req: Request) {
         messages: allMessages,
       });
 
-      const aiMessages = allMessages.map(msg => ({
-        ...msg,
-        content: msg.parts?.[0]?.content ?? msg.parts?.[0]?.text ?? "",
-      }));
-      const dbMessages = convertToDBMessages(aiMessages, id);
+      const dbMessages = convertToDBMessages(allMessages, id);
       await saveMessages({ messages: dbMessages });
 
       // Clean up resources - now this just closes the client connections
