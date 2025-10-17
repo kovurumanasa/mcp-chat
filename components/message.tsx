@@ -169,58 +169,58 @@ const PurePreviewMessage = ({
       >
         <div className="flex flex-col w-full space-y-3">
           {message.parts?.map((part, i) => {
-            switch (part.type) {
-              case "text":
-                return (
-                  <div
-                    key={`message-${message.id}-part-${i}`}
-                    className="flex flex-row gap-2 items-start w-full"
-                  >
-                    <div
-                      className={cn("flex flex-col gap-3 w-full", {
-                        "bg-secondary text-secondary-foreground px-4 py-3 rounded-2xl":
-                          message.role === "user",
-                      })}
-                    >
-                      <Markdown>{part.text}</Markdown>
-                    </div>
+            if (part.type === "text") {
+              let displayText = part.text;
+              try {
+                const parsed = JSON.parse(part.text);
+                if (parsed && typeof parsed === "object" && "message" in parsed) {
+                  displayText = parsed.message;
+                }
+              } catch (e) {}
+              if (displayText === "") {
+                displayText = "No message to display.";
+              }
+              return (
+                <div key={`message-${message.id}-part-${i}`} className="flex flex-row gap-2 items-start w-full">
+                  <div className={cn("flex flex-col gap-3 w-full", {
+                    "bg-secondary text-secondary-foreground px-4 py-3 rounded-2xl": message.role === "user",
+                  })}>
+                    <Markdown>{displayText}</Markdown>
                   </div>
-                );
-              case "tool-invocation":
-                const { toolName, state, args } = part.toolInvocation;
-                const result =
-                  "result" in part.toolInvocation
-                    ? part.toolInvocation.result
-                    : null;
-
-                return (
-                  <ToolInvocation
-                    key={`message-${message.id}-part-${i}`}
-                    toolName={toolName}
-                    state={state}
-                    args={args}
-                    result={result}
-                    isLatestMessage={isLatestMessage}
-                    status={status}
-                  />
-                );
-              case "reasoning":
-                return (
-                  <ReasoningMessagePart
-                    key={`message-${message.id}-${i}`}
-                    // @ts-expect-error part
-                    part={part}
-                    isReasoning={
-                      (message.parts &&
-                        status === "streaming" &&
-                        i === message.parts.length - 1) ??
-                      false
-                    }
-                  />
-                );
-              default:
-                return null;
+                </div>
+              );
             }
+            // ...existing code...
+            if (part.type === "tool-invocation") {
+              // Extract toolName, args, and result from part for ToolInvocationProps
+              const toolName = part.toolName || part.name || "";
+              const args = part.args || part.input || {};
+              const result = part.result || part.output || null;
+              return (
+                <ToolInvocation
+                  key={`message-${message.id}-part-${i}`}
+                  toolName={toolName}
+                  args={args}
+                  result={result}
+                  state={part.state}
+                  isLatestMessage={isLatestMessage}
+                  status={status}
+                />
+              );
+            }
+            if (part.type === "reasoning") {
+              return (
+                <ReasoningMessagePart
+                  key={`message-${message.id}-${i}`}
+                  // @ts-expect-error part
+                  part={part}
+                  isReasoning={
+                    (message.parts && status === "streaming" && i === message.parts.length - 1) ?? false
+                  }
+                />
+              );
+            }
+            return null;
           })}
           {shouldShowCopyButton && (
             <div className="flex justify-start mt-2">
@@ -237,8 +237,6 @@ export const Message = memo(PurePreviewMessage, (prevProps, nextProps) => {
   if (prevProps.status !== nextProps.status) return false;
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.isLatestMessage !== nextProps.isLatestMessage) return false;
-  if (prevProps.message.annotations !== nextProps.message.annotations)
-    return false;
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
   return true;

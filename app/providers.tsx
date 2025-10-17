@@ -25,22 +25,26 @@ export function Providers({ children }: { children: ReactNode }) {
     true
   );
 
+  // ...existing code...
+  const { AzureMsalProvider } = require("@/lib/msal-provider");
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem={true}
-        disableTransitionOnChange
-        themes={["light", "dark", "sunset", "black"]}
-      >
-        <MCPProvider>
-          <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            {children}
-            <Toaster position="top-center" richColors />
-          </SidebarProvider>
-        </MCPProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <AzureMsalProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem={true}
+          disableTransitionOnChange
+          themes={["light", "dark", "sunset", "black"]}
+        >
+          <MCPProvider>
+            <SidebarProvider defaultOpen={sidebarOpen} open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              {children}
+              <Toaster position="top-center" richColors />
+            </SidebarProvider>
+          </MCPProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </AzureMsalProvider>
   );
 } 

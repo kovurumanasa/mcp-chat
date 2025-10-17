@@ -138,14 +138,11 @@ export function ToolInvocation({
                 <ArrowRight className="h-3 w-3" />
                 <span className="font-medium">Result</span>
               </div>
-              <pre
-                className={cn(
-                  "text-xs font-mono p-2.5 rounded-md overflow-x-auto max-h-[300px] overflow-y-auto",
-                  "border border-border/40 bg-muted/10"
-                )}
-              >
-                {formatContent(result)}
-              </pre>
+              {/* Render result as Markdown for proper formatting */}
+              <div className="border border-border/40 bg-muted/10 p-2.5 rounded-md overflow-x-auto max-h-[300px] overflow-y-auto">
+                {/* @ts-ignore: result may be string or object, but Markdown expects string */}
+                <Markdown>{typeof result === "string" ? result : formatContent(result)}</Markdown>
+              </div>
             </div>
           )}
         </div>

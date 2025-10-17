@@ -1,6 +1,5 @@
 import { model, type modelID } from "@/ai/providers";
 import { smoothStream, streamText, type UIMessage } from "ai";
-import { appendResponseMessages } from 'ai';
 import { saveChat, saveMessages, convertToDBMessages } from '@/lib/chat-store';
 import { nanoid } from 'nanoid';
 import { db } from '@/lib/db';
@@ -10,6 +9,11 @@ import { initializeMCPClients, type MCPServerConfig } from '@/lib/mcp-client';
 import { generateTitle } from '@/app/actions';
 
 import { checkBotId } from "botid/server";
+
+function appendResponseMessages(original: UIMessage[], responseMessages: UIMessage[]) {
+  // Simple concat keeps order: original messages first, then model/tool response messages.
+  return [...original, ...responseMessages];
+}
 
 export async function POST(req: Request) {
   const {
@@ -141,6 +145,7 @@ export async function POST(req: Request) {
         },
       }
     },
+    stopWhen: (lastStep) => lastStep.type === 'tool-result' && lastStep.toolCall.toolName === 'final_tool',
     experimental_transform: smoothStream({
       delayInMs: 5, // optional: defaults to 10ms
       chunking: 'line', // optional: defaults to 'word'
@@ -150,10 +155,18 @@ export async function POST(req: Request) {
     },
     async onFinish({ response }) {
       responseCompleted = true;
-      const allMessages = appendResponseMessages({
+      // Convert ResponseMessage[] to UIMessage[]
+      const responseUIMessages: UIMessage[] = response.messages.map((msg, idx) => ({
+        id: msg.id ?? nanoid(),
+        role: msg.role,
+        parts: msg.parts ?? [{ type: "text", content: msg.content ?? "" }],
+        ...(msg as any)
+      }));
+
+      const allMessages = appendResponseMessages(
         messages,
-        responseMessages: response.messages,
-      });
+        responseUIMessages,
+      );
 
       await saveChat({
         id,
@@ -161,7 +174,11 @@ export async function POST(req: Request) {
         messages: allMessages,
       });
 
-      const dbMessages = convertToDBMessages(allMessages, id);
+      const aiMessages = allMessages.map(msg => ({
+        ...msg,
+        content: msg.parts?.[0]?.content ?? msg.parts?.[0]?.text ?? "",
+      }));
+      const dbMessages = convertToDBMessages(aiMessages, id);
       await saveMessages({ messages: dbMessages });
 
       // Clean up resources - now this just closes the client connections
@@ -184,19 +201,9 @@ export async function POST(req: Request) {
 
   result.consumeStream()
   // Add chat ID to response headers so client can know which chat was created
-  return result.toDataStreamResponse({
-    sendReasoning: true,
+  return result.toTextStreamResponse({
     headers: {
       'X-Chat-ID': id
-    },
-    getErrorMessage: (error) => {
-      if (error instanceof Error) {
-        if (error.message.includes("Rate limit")) {
-          return "Rate limit exceeded. Please try again later.";
-        }
-      }
-      console.error(error);
-      return "An error occurred.";
-    },
+    }
   });
 }

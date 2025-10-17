@@ -1,11 +1,9 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import * as schema from "./schema";
 
-// Initialize the connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+// Initialize better-sqlite3 database
+const sqlite = new Database(process.env.DATABASE_URL?.replace("sqlite://", "") || "./dev.db");
 
-// Initialize Drizzle with the connection pool and schema
-export const db = drizzle(pool, { schema }); 
+// Initialize Drizzle with better-sqlite3 and schema
+export const db = drizzle(sqlite, { schema });

@@ -1,4 +1,5 @@
-import { timestamp, pgTable, text, primaryKey, json } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 // Message role enum type
@@ -8,20 +9,20 @@ export enum MessageRole {
   TOOL = "tool"
 }
 
-export const chats = pgTable('chats', {
+export const chats = sqliteTable('chats', {
   id: text('id').primaryKey().notNull().$defaultFn(() => nanoid()),
   userId: text('user_id').notNull(),
   title: text('title').notNull().default('New Chat'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const messages = pgTable('messages', {
+export const messages = sqliteTable('messages', {
   id: text('id').primaryKey().notNull().$defaultFn(() => nanoid()),
-  chatId: text('chat_id').notNull().references(() => chats.id, { onDelete: 'cascade' }),
+  chatId: text('chat_id').notNull(), // SQLite does not support references in drizzle yet
   role: text('role').notNull(), // user, assistant, or tool
-  parts: json('parts').notNull(), // Store parts as JSON in the database
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  parts: text('parts').notNull(), // Store parts as JSON string in the database
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Types for structured message content

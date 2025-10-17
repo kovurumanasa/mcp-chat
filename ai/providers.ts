@@ -1,11 +1,8 @@
-import { createGroq } from "@ai-sdk/groq";
-import { createXai } from "@ai-sdk/xai";
+import { createAzure } from '@ai-sdk/azure';
+import { customProvider, wrapLanguageModel, extractReasoningMiddleware } from "ai";
 
-import {
-  customProvider,
-  wrapLanguageModel,
-  extractReasoningMiddleware
-} from "ai";
+// Optional middleware for reasoning markup
+const middleware = extractReasoningMiddleware({ tagName: 'think' });
 
 export interface ModelInfo {
   provider: string;
@@ -15,92 +12,64 @@ export interface ModelInfo {
   capabilities: string[];
 }
 
-const middleware = extractReasoningMiddleware({
-  tagName: 'think',
-});
-
-// Helper to get API keys from environment variables first, then localStorage
+// 🔑 Helper to retrieve API keys (env first, then localStorage)
 const getApiKey = (key: string): string | undefined => {
-  // Check for environment variables first
-  if (process.env[key]) {
-    return process.env[key] || undefined;
-  }
-
-  // Fall back to localStorage if available
-  if (typeof window !== 'undefined') {
-    return window.localStorage.getItem(key) || undefined;
-  }
-
+  if (process.env[key]) return process.env[key];
+  if (typeof window !== 'undefined') return window.localStorage.getItem(key) || undefined;
   return undefined;
 };
 
-const groqClient = createGroq({
-  apiKey: getApiKey('GROQ_API_KEY'),
+// 🔧 Azure-specific settings from environment variables or fallback
+const azureApiKey = getApiKey('AZURE_API_KEY');
+const azureResourceName = process.env.AZURE_RESOURCE_NAME || 'azscaappllmsda1304023078'; // your Azure resource name
+const azureDeploymentName = process.env.AZURE_DEPLOYMENT_NAME || 'gpt-4o'; // deployment name from Azure portal
+const azureApiVersion = process.env.AZURE_API_VERSION || '2024-04-01-preview';
+
+// ✅ Create Azure client
+const azureOpenAIClient = createAzure({
+  apiKey: azureApiKey,
+  resourceName: azureResourceName,
+  apiVersion: azureApiVersion,
+  useDeploymentBasedUrls: true, 
 });
 
-const xaiClient = createXai({
-  apiKey: getApiKey('XAI_API_KEY'),
-});
-
+// ✅ Define available models using deployment name
 const languageModels = {
-  "qwen3-32b": wrapLanguageModel(
-    {
-      model: groqClient('qwen/qwen3-32b'),
-      middleware
-    }
-  ),
-  "grok-3-mini": xaiClient("grok-3-mini-latest"),
-  "kimi-k2": groqClient('moonshotai/kimi-k2-instruct'),
-  "llama4": groqClient('meta-llama/llama-4-scout-17b-16e-instruct')
+  "azure-gpt-4o": azureOpenAIClient('gpt-4o'),
 };
 
+// ✅ Metadata about the model
 export const modelDetails: Record<keyof typeof languageModels, ModelInfo> = {
-  "kimi-k2": {
-    provider: "Groq",
-    name: "Kimi K2",
-    description: "Latest version of Moonshot AI's Kimi K2 with good balance of capabilities.",
-    apiVersion: "kimi-k2-instruct",
-    capabilities: ["Balanced", "Efficient", "Agentic"]
+  "azure-gpt-4o": {
+    provider: "Azure OpenAI",
+    name: "GPT-4o",
+    description: "Flagship multimodal model on Azure OpenAI combining text, vision, and audio capabilities, delivering state-of-the-art generative and conversational AI performance, with efficiency and broad language support.",
+    apiVersion: azureApiVersion,
+    capabilities: [
+      "Multimodal",
+      "Multilingual",
+      "Vision",
+      "Audio",
+      "Advanced Reasoning",
+      "Real-time Interaction",
+      "Code Generation",
+      "Large Context Window"
+    ]
   },
-  "qwen3-32b": {
-    provider: "Groq",
-    name: "Qwen 3 32B",
-    description: "Latest version of Alibaba's Qwen 32B with strong reasoning and coding capabilities.",
-    apiVersion: "qwen3-32b",
-    capabilities: ["Reasoning", "Efficient", "Agentic"]
-  },
-  "grok-3-mini": {
-    provider: "XAI",
-    name: "Grok 3 Mini",
-    description: "Latest version of XAI's Grok 3 Mini with strong reasoning and coding capabilities.",
-    apiVersion: "grok-3-mini-latest",
-    capabilities: ["Reasoning", "Efficient", "Agentic"]
-  },
-  "llama4": {
-    provider: "Groq",
-    name: "Llama 4",
-    description: "Latest version of Meta's Llama 4 with good balance of capabilities.",
-    apiVersion: "llama-4-scout-17b-16e-instruct",
-    capabilities: ["Balanced", "Efficient", "Agentic"]
-  }
 };
 
-// Update API keys when localStorage changes (for runtime updates)
+// 🔁 Live-update if localStorage changes API key (runtime only)
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    // Reload the page if any API key changed to refresh the providers
     if (event.key?.includes('API_KEY')) {
       window.location.reload();
     }
   });
 }
 
-export const model = customProvider({
-  languageModels,
-});
+// ✅ Final exported model for app-wide use
+export const model = customProvider({ languageModels });
 
 export type modelID = keyof typeof languageModels;
-
 export const MODELS = Object.keys(languageModels);
-
-export const defaultModel: modelID = "kimi-k2";
+export const defaultModel: modelID = "azure-gpt-4o";

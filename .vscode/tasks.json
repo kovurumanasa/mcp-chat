@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "dev on port 4200",
+			"type": "shell",
+			"command": "cross-env NODE_EXTRA_CA_CERTS=./zf-cabundle.crt next dev --port 4200 --turbopack",
+			"args": [],
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "dev on port 4200",
+			"type": "shell",
+			"command": "cross-env NODE_EXTRA_CA_CERTS=./zf-cabundle.crt next dev --port 4200 --turbopack",
+			"args": [],
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

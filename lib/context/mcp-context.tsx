@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useRef } from "react";
+ import { createContext, useContext, useRef, useMemo } from "react";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 export interface KeyValuePair {
@@ -231,8 +231,8 @@ export function MCPProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Calculate mcpServersForApi based on current state
-  const mcpServersForApi = getActiveServersForApi();
+  // Memoize mcpServersForApi so it only changes when selectedMcpServers or mcpServers change
+  const mcpServersForApi = useMemo(() => getActiveServersForApi(), [selectedMcpServers, mcpServers]);
 
   return (
     <MCPContext.Provider
