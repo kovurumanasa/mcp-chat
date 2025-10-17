@@ -17,9 +17,9 @@ import { MsalProvider } from "@azure/msal-react";
 
 // Replace with your Azure AD app/client ID and authority
 const msalConfig = {
-    auth: {
-        clientId: "7315ee12-b050-4128-96dd-fdffcbbebbb8", // TODO: Replace with your Azure AD app's clientId
-        authority: "https://login.microsoftonline.com/eb70b763-b6d7-4486-8555-8831709a784e", // TODO: Replace with your tenant ID
+     auth: {
+        clientId: `${process.env.NEXT_PUBLIC_AZURE_CLIENT_ID}`, // TODO: Replace with your Azure AD app's clientId
+        authority: `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`, // TODO: Replace with your tenant ID
         knownAuthorities: ['login.microsoftonline.com'],
         redirectUri: 'https://localhost:4200', // TODO: Replace with your redirect URI
         // postLogoutRedirectUri: window.location.origin + '/'

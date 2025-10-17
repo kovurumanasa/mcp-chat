@@ -64,8 +64,8 @@ import { Label } from "@/components/ui/label";
 import { useMCP } from "@/lib/context/mcp-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence, motion } from "motion/react";
-import { useAuth } from "@/lib/msal-provider";
 import { useMsal } from "@azure/msal-react";
+import { useAuth } from "@/lib/msal-provider";
 
 export function ChatSidebar() {
   // MSAL user info
@@ -585,3 +585,5 @@ export function ChatSidebar() {
     </Sidebar>
   );
 }
+
+

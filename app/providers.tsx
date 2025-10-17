@@ -8,7 +8,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { MCPProvider } from "@/lib/context/mcp-context";
-import { useAuth } from "@/lib/msal-provider";
 
 // Create a client
 const queryClient = new QueryClient({
